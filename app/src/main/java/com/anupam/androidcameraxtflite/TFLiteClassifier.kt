@@ -21,9 +21,6 @@ import android.graphics.Bitmap
 import android.os.*
 import org.tensorflow.lite.Interpreter
 import android.speech.tts.TextToSpeech
-import android.widget.EditText
-import android.widget.Toast
-import org.w3c.dom.Text
 
 class TFLiteClassifier(private val context: Context) {
 
