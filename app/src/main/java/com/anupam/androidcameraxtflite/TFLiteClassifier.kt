@@ -2,7 +2,6 @@ package com.anupam.androidcameraxtflite
 
 import android.content.Context
 import android.content.res.AssetManager
-import android.os.SystemClock
 import android.util.Log
 import com.google.android.gms.tasks.Task
 import com.google.android.gms.tasks.Tasks.call
@@ -19,7 +18,12 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.collections.ArrayList
 import android.graphics.Bitmap
+import android.os.*
 import org.tensorflow.lite.Interpreter
+import android.speech.tts.TextToSpeech
+import android.widget.EditText
+import android.widget.Toast
+import org.w3c.dom.Text
 
 class TFLiteClassifier(private val context: Context) {
 
@@ -37,7 +41,33 @@ class TFLiteClassifier(private val context: Context) {
     private var inputImageHeight: Int = 0
     private var modelInputSize: Int = 0
 
+    private var tts: TextToSpeech? = null
+
+//    private fun initTextToSpeech() {
+//        Log.d(TAG, "initTextToSpeech: 함수실행")
+//        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP){
+//            return
+//        }
+//        tts = TextToSpeech(context, TextToSpeech.OnInitListener {
+//            if(it == TextToSpeech.SUCCESS){
+//                var result = tts?.setLanguage(Locale.ENGLISH)
+//                if(result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED){
+//                    return@OnInitListener
+//                }
+//            }
+//        })
+//    }
+
     fun initialize(): Task<Void> {
+        Log.d(TAG, "initTextToSpeech: 함수실행")
+        tts = TextToSpeech(context, TextToSpeech.OnInitListener {
+            if(it == TextToSpeech.SUCCESS){
+                var result = tts?.setLanguage(Locale.ENGLISH)
+                if(result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED){
+                    return@OnInitListener
+                }
+            }
+        })
         return call(
             executorService,
             Callable<Void> {
@@ -46,7 +76,6 @@ class TFLiteClassifier(private val context: Context) {
             }
         )
     }
-
     @Throws(IOException::class)
     private fun initializeInterpreter() {
 
@@ -105,6 +134,7 @@ class TFLiteClassifier(private val context: Context) {
     }
 
 
+
     private fun classify(bitmap: Bitmap): String {
 
         check(isInitialized) { "TF Lite Interpreter is not initialized yet." }
@@ -120,16 +150,28 @@ class TFLiteClassifier(private val context: Context) {
 
         var inferenceTime = endTime - startTime
         var index = getMaxResult(output[0])
-        var result = "Prediction is ${labels[index]}\nInference Time $inferenceTime ms"
+        var result = "${labels[index]}\nInference Time $inferenceTime ms"
+
+        ttsSpeak(labels[index])
 
         return result
     }
 
+    private fun ttsSpeak(strTTS: String) {
+        tts?.speak(strTTS, TextToSpeech.QUEUE_FLUSH, null, null)
+//        tts?.playSilentUtterance(1000, TextToSpeech.QUEUE_ADD, null)
+    }
+
     fun classifyAsync(bitmap: Bitmap): Task<String> {
+        Thread.sleep(1000)
         return call(executorService, Callable<String> { classify(bitmap) })
     }
 
     fun close() {
+        if (tts != null) {
+            tts?.stop();
+            tts?.shutdown();
+        }
         call(
             executorService,
             Callable<String> {
