@@ -149,9 +149,34 @@ class TFLiteClassifier(private val context: Context) {
         var index = getMaxResult(output[0])
         var result = "${labels[index]}\nInference Time $inferenceTime ms"
 
-        ttsSpeak(labels[index])
+//        ttsSpeak(labels[index])
+        countSpeak(index)
 
         return result
+    }
+    var speakArray = Array<Int>(3,{-1})
+
+    private fun countSpeak(index: Int) {
+        if (speakArray[0] == -1) {
+            speakArray[0] = index
+        }
+        else if (speakArray[1] == -1) {
+            speakArray[1] = index
+        }
+        else if (speakArray[2] == -1) {
+            speakArray[2] = index
+        }
+        else {
+            if (speakArray[0] == speakArray[1]) {
+                if (speakArray[1] == speakArray[2]) {
+                    ttsSpeak(labels[speakArray[0]])
+                }
+            }
+
+            speakArray[0] = index
+            speakArray[1] = -1
+            speakArray[2] = -1
+        }
     }
 
     private fun ttsSpeak(strTTS: String) {
@@ -160,7 +185,7 @@ class TFLiteClassifier(private val context: Context) {
     }
 
     fun classifyAsync(bitmap: Bitmap): Task<String> {
-        Thread.sleep(1000)
+        Thread.sleep(250)
         return call(executorService, Callable<String> { classify(bitmap) })
     }
 
