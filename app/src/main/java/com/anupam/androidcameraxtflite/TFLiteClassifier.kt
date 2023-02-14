@@ -154,7 +154,7 @@ class TFLiteClassifier(private val context: Context) {
 
         return result
     }
-    var speakArray = Array<Int>(3,{-1})
+    var speakArray = Array<Int>(3) { -1 }
 
     private fun countSpeak(index: Int) {
         if (speakArray[0] == -1) {
